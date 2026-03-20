@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+anthropic
+openai
+python-multipart
+requests
+aiofiles
+eval_type_backport

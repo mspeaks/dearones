@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dear Ones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #132131;
+      --bg: #f8f4ee;
+      --card: #fffaf6;
+      --muted: #705f52;
+      --line: #eadfce;
+      --brand: #c54431;
+      --brand-2: #8f2f26;
+      --deep: #1f2c3b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% -20%, rgba(197,68,49,0.22), transparent 52%),
+        radial-gradient(circle at 8% 10%, rgba(31,44,59,0.15), transparent 40%),
+        linear-gradient(180deg, #fff9f2 0%, #f6efe6 100%);
+      min-height: 100vh;
+    }
+    h1, h2, h3, h4 { font-family: "Fraunces", serif; letter-spacing: 0.01em; }
+    .panel {
+      background: color-mix(in oklab, var(--card), white 15%);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      box-shadow: 0 12px 34px rgba(22, 29, 37, 0.08);
+    }
+    .ringed { box-shadow: 0 0 0 1px rgba(31,44,59,0.08), 0 12px 28px rgba(31,44,59,0.10); }
+    .wave span {
+      animation: bouncebar 0.9s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .wave span:nth-child(2) { animation-delay: 0.08s; }
+    .wave span:nth-child(3) { animation-delay: 0.16s; }
+    .wave span:nth-child(4) { animation-delay: 0.24s; }
+    .wave span:nth-child(5) { animation-delay: 0.32s; }
+    @keyframes bouncebar {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    .slide {
+      animation: rise 340ms cubic-bezier(.2,.7,.2,1);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div x-data="dearOnesApp()" x-init="init()" class="min-h-screen">
+    <div x-show="loading" class="min-h-screen flex items-center justify-center px-6">
+      <div class="panel max-w-sm w-full p-6 text-center slide">
+        <h1 class="text-3xl font-semibold">Dear Ones</h1>
+        <p class="text-sm mt-2" style="color:var(--muted)">Loading your memory vault...</p>
+      </div>
+    </div>
+
+    <template x-if="!loading && !authenticated">
+      <div class="min-h-screen flex items-center justify-center px-4 py-6">
+        <div class="panel ringed max-w-sm w-full p-6 slide">
+          <h1 class="text-4xl leading-tight">Dear Ones</h1>
+          <p class="text-sm mt-2" style="color:var(--muted)">Letters from who you were, to who they'll become.</p>
+          <form class="mt-6 space-y-3" @submit.prevent="login">
+            <label class="text-xs font-semibold tracking-wide uppercase" style="color:var(--muted)">Password</label>
+            <input
+              x-model="password"
+              type="password"
+              required
+              class="w-full rounded-xl px-4 py-3 bg-white border"
+              style="border-color:var(--line)"
+              placeholder="Enter app password" />
+            <button class="w-full rounded-xl px-4 py-3 text-white font-semibold" style="background:linear-gradient(135deg,var(--brand),var(--brand-2));">
+              Unlock
+            </button>
+          </form>
+          <p x-show="error" x-text="error" class="text-sm mt-3 text-red-700"></p>
+          <p x-show="bootError" x-text="bootError" class="text-xs mt-3 text-red-700"></p>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="!loading && authenticated">
+      <div class="pb-16">
+        <header class="sticky top-0 z-20 border-b backdrop-blur" style="border-color:var(--line);background:rgba(255,248,239,.92);">
+          <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <h1 class="text-2xl leading-none" x-text="headerTitle()"></h1>
+              <p class="text-xs mt-1" style="color:var(--muted)" x-text="headerSubtitle()"></p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="goHome()"
+                class="text-xs font-semibold px-3 py-2 rounded-lg border"
+                style="border-color:var(--line)">
+                Home
+              </button>
+              <button
+                @click="logout"
+                class="text-xs font-semibold px-3 py-2 rounded-lg text-white"
+                style="background:var(--deep)">
+                Logout
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+          <template x-if="view === 'onboarding'">
+            <section class="space-y-4 slide">
+              <div class="panel p-5">
+                <h2 class="text-2xl">Set Up Your Dear Ones</h2>
+                <p class="text-sm mt-1" style="color:var(--muted)">Start with your profile, then add one to three people that matter most.</p>
+              </div>
+              <div class="panel p-5 space-y-4">
+                <h3 class="text-lg">Your Profile</h3>
+                <label class="block text-xs font-semibold tracking-wide uppercase" style="color:var(--muted)">First Name</label>
+                <input x-model="onboarding.profile.first_name" class="w-full rounded-xl px-4 py-3 bg-white border" style="border-color:var(--line)" placeholder="Mark">
+                <label class="block text-xs font-semibold tracking-wide uppercase" style="color:var(--muted)">Default Signature</label>
+                <input x-model="onboarding.profile.default_signature_name" class="w-full rounded-xl px-4 py-3 bg-white border" style="border-color:var(--line)" placeholder="Dad">
+                <label class="block text-xs font-semibold tracking-wide uppercase" style="color:var(--muted)">Timezone</label>
+                <input x-model="onboarding.profile.timezone" class="w-full rounded-xl px-4 py-3 bg-white border" style="border-color:var(--line)">
+                <label class="block text-xs font-semibold tracking-wide uppercase" style="color:var(--muted)">Reminder Email</label>
+                <input x-model="onboarding.profile.email" type="email" class="w-full rounded-xl px-4 py-3 bg-white border" style="border-color:var(--line)" placeholder="you@example.com">
+              </div>
+              <div class="panel p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg">People (1-3)</h3>
+                  <button
+                    @click="addOnboardingPerson"
+                    :disabled="onboarding.people.length >= 3"
+                    class="text-xs font-semibold px-3 py-2 rounded-lg border disabled:opacity-40"
+                    style="border-color:var(--line)">
+                    Add Person
+                  </button>
+                </div>
+                <template x-for="(p, idx) in onboarding.people" :key="idx">
+                  <div class="rounded-xl border p-3 space-y-2" style="border-color:var(--line)">
+                    <div class="flex items-center justify-between">
+                      <h4 class="font-semibold text-sm" x-text="'Person ' + (idx + 1)"></h4>
+                      <button
+                        x-show="onboarding.people.length > 1"
+                        @click="removeOnboardingPerson(idx)"
+                        class="text-xs text-red-700">
+                        Remove
+                      </button>
+                    </div>
+                    <input x-model="p.name" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Name">
+                    <div class="grid grid-cols-2 gap-2">
+                      <select x-model="p.relationship_type" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                        <template x-for="opt in relationshipOptions" :key="opt.value">
+                          <option :value="opt.value" x-text="opt.label"></option>
+                        </template>
+                      </select>
+                      <select x-model="p.letter_frequency" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    <input x-model="p.email" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Email (optional)">
+                    <div class="grid grid-cols-2 gap-2">
+                      <select x-model="p.milestone_label" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                        <template x-for="m in milestoneOptions" :key="m">
+                          <option :value="m" x-text="m"></option>
+                        </template>
+                      </select>
+                      <input x-model="p.milestone_date" type="date" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                    </div>
+                  </div>
+                </template>
+                <button
+                  @click="submitOnboarding"
+                  class="w-full rounded-xl px-4 py-3 text-white font-semibold"
+                  style="background:linear-gradient(135deg,var(--brand),var(--brand-2));">
+                  Start Logging Memories
+                </button>
+              </div>
+            </section>
+          </template>
+
+          <template x-if="view === 'home'">
+            <section class="space-y-4 slide">
+              <div x-show="quietPrompts.length > 0" class="panel p-4">
+                <h2 class="text-lg">Gentle Nudge</h2>
+                <template x-for="p in quietPrompts" :key="p.id">
+                  <p class="text-sm mt-2" style="color:var(--muted)">
+                    Two quiet months for <span class="font-semibold" x-text="p.name"></span>.
+                    Capture one memory this week.
+                  </p>
+                </template>
+              </div>
+
+              <div class="panel p-4">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-xl">This Month's Reflections</h2>
+                  <span class="text-xs uppercase tracking-wide font-semibold" style="color:var(--muted)">Chronological</span>
+                </div>
+                <div class="mt-3 space-y-3">
+                  <template x-for="ref in sortedReflections()" :key="ref.id">
+                    <button
+                      @click="openReflection(ref)"
+                      class="w-full text-left rounded-xl border p-3 bg-white"
+                      style="border-color:var(--line)">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 class="text-base leading-tight" x-text="reflectionTitle(ref)"></h3>
+                          <p class="text-xs mt-1" style="color:var(--muted)" x-text="formatMonth(ref.month_key)"></p>
+                        </div>
+                        <span
+                          class="text-[11px] px-2 py-1 rounded-full font-semibold"
+                          :class="isReflectionDue(ref) ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'"
+                          x-text="isReflectionDue(ref) ? 'Letter due' : 'Reflection only'">
+                        </span>
+                      </div>
+                      <p class="text-sm mt-2 line-clamp-2" style="color:var(--muted)" x-text="previewBullet(ref)"></p>
+                    </button>
+                  </template>
+                  <p x-show="sortedReflections().length === 0" class="text-sm" style="color:var(--muted)">
+                    Reflections will appear here after your first month of memories.
+                  </p>
+                </div>
+              </div>
+
+              <div class="panel p-4">
+                <div class="flex items-center justify-between gap-2">
+                  <h2 class="text-xl">People</h2>
+                  <button
+                    @click="showAddPerson = !showAddPerson"
+                    class="text-xs font-semibold px-3 py-2 rounded-lg border"
+                    style="border-color:var(--line)">
+                    <span x-text="showAddPerson ? 'Close' : 'Add Person'"></span>
+                  </button>
+                </div>
+                <div x-show="showAddPerson" class="mt-3 rounded-xl border p-3 space-y-2" style="border-color:var(--line)">
+                  <input x-model="addPersonForm.name" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Name">
+                  <div class="grid grid-cols-2 gap-2">
+                    <select x-model="addPersonForm.relationship_type" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                      <template x-for="opt in relationshipOptions" :key="opt.value">
+                        <option :value="opt.value" x-text="opt.label"></option>
+                      </template>
+                    </select>
+                    <select x-model="addPersonForm.letter_frequency" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <input x-model="addPersonForm.email" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Email (optional)">
+                  <button
+                    @click="createPersonFromHome"
+                    class="w-full rounded-lg px-3 py-2 text-white font-semibold"
+                    style="background:var(--deep)">
+                    Save Person
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <template x-for="p in people" :key="p.id">
+                    <button
+                      @click="openPerson(p)"
+                      class="w-full text-left rounded-xl border p-3 bg-white"
+                      style="border-color:var(--line)">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 class="text-base leading-tight" x-text="p.name"></h3>
+                          <p class="text-xs mt-1" style="color:var(--muted)">
+                            <span x-text="labelForRelationship(p.relationship_type, p.relationship_label)"></span>
+                            <span> / </span>
+                            <span x-text="p.letter_frequency"></span>
+                          </p>
+                        </div>
+                        <span class="text-xs font-semibold" style="color:var(--muted)" x-text="formatDate(p.last_entry_at)"></span>
+                      </div>
+                    </button>
+                  </template>
+                  <p x-show="people.length === 0" class="text-sm" style="color:var(--muted)">Add your first person to begin.</p>
+                </div>
+              </div>
+            </section>
+          </template>
+
+          <template x-if="view === 'person' && selectedPerson()">
+            <section class="space-y-4 slide">
+              <div class="panel p-4 text-center">
+                <div class="flex items-center justify-between">
+                  <div class="text-left">
+                    <h2 class="text-xl" x-text="'Dear ' + selectedPerson().name"></h2>
+                    <p class="text-xs mt-1" style="color:var(--muted)">
+                      <span x-text="labelForRelationship(selectedPerson().relationship_type, selectedPerson().relationship_label)"></span>
+                      <span> / </span>
+                      <span x-text="selectedPerson().letter_frequency"></span>
+                    </p>
+                  </div>
+                  <button
+                    @click="openPersonSettings"
+                    class="text-xs font-semibold px-3 py-2 rounded-lg border"
+                    style="border-color:var(--line)">
+                    Settings
+                  </button>
+                </div>
+                <div class="mt-4">
+                  <button
+                    @click="toggleRecording"
+                    class="mx-auto w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200"
+                    :class="isRecording ? 'text-white' : 'text-white'"
+                    :style="isRecording
+                      ? 'background:linear-gradient(145deg,#e04f39,#9b2f22);box-shadow:0 0 0 12px rgba(197,68,49,.18),0 0 32px rgba(197,68,49,.40)'
+                      : 'background:linear-gradient(145deg,#2d3d4f,#1f2c3b);box-shadow:0 12px 24px rgba(31,44,59,.35)'">
+                    <svg class="w-9 h-9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.92V21h2a1 1 0 1 1 0 2H9a1 1 0 0 1 0-2h2v-2.08A7 7 0 0 1 5 12a1 1 0 1 1 2 0 5 5 0 1 0 10 0Z"/>
+                    </svg>
+                  </button>
+                  <p class="text-sm mt-3" style="color:var(--muted)" x-text="isRecording ? 'Tap to stop and save memory' : 'Tap to record a memory'"></p>
+                </div>
+                <div x-show="isRecording" class="mt-3 max-w-xs mx-auto rounded-xl border p-3 bg-white" style="border-color:var(--line)" x-transition>
+                  <div class="wave flex items-end justify-center gap-1 h-8">
+                    <span class="w-1 h-3 rounded bg-red-500"></span>
+                    <span class="w-1 h-4 rounded bg-red-500"></span>
+                    <span class="w-1 h-5 rounded bg-red-500"></span>
+                    <span class="w-1 h-4 rounded bg-red-500"></span>
+                    <span class="w-1 h-3 rounded bg-red-500"></span>
+                  </div>
+                  <p class="text-xs mt-2 text-center" style="color:var(--muted)" x-text="formatTimer(recordingSeconds)"></p>
+                </div>
+                <div x-show="voiceTranscript" class="mt-3 rounded-xl bg-green-50 border p-3 text-left" style="border-color:#b7dfc2" x-transition>
+                  <p class="text-xs font-semibold text-green-700 uppercase tracking-wide">Saved transcript</p>
+                  <p class="text-sm mt-1 text-green-900" x-text="voiceTranscript"></p>
+                </div>
+              </div>
+
+              <div class="panel p-4">
+                <h3 class="text-lg">Quick Note</h3>
+                <textarea x-model="newEntryContent" rows="3" class="w-full mt-2 rounded-xl border px-3 py-2 bg-white" style="border-color:var(--line)" placeholder="Type a memory if you can't speak right now..."></textarea>
+                <button
+                  @click="addTextEntry"
+                  class="mt-2 w-full rounded-xl px-4 py-3 text-white font-semibold"
+                  style="background:var(--deep)">
+                  Save Note
+                </button>
+              </div>
+
+              <div class="panel p-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg">Letters</h3>
+                  <button
+                    @click="generateDraftForPerson"
+                    class="text-xs font-semibold px-3 py-2 rounded-lg text-white"
+                    style="background:var(--deep)">
+                    Generate Draft
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <template x-for="letter in letters" :key="letter.id || letter.local_id">
+                    <button
+                      @click="openLetter(letter)"
+                      class="w-full text-left rounded-xl border p-3 bg-white"
+                      style="border-color:var(--line)">
+                      <div class="flex items-center justify-between gap-2">
+                        <h4 class="font-semibold text-sm" x-text="letter.title || 'Untitled letter'"></h4>
+                        <span
+                          class="text-[11px] px-2 py-1 rounded-full font-semibold"
+                          :class="letter.status === 'sent' ? 'bg-green-100 text-green-800' : (letter.status === 'sealed' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700')"
+                          x-text="letter.status || 'draft'"></span>
+                      </div>
+                      <p class="text-xs mt-1" style="color:var(--muted)" x-text="formatDate(letter.created_at)"></p>
+                    </button>
+                  </template>
+                  <p x-show="letters.length === 0" class="text-sm" style="color:var(--muted)">No letters yet.</p>
+                </div>
+              </div>
+
+              <div class="panel p-4">
+                <h3 class="text-lg">Memory Feed</h3>
+                <div class="mt-3 space-y-2 max-h-[45vh] overflow-auto">
+                  <template x-for="entry in entries" :key="entry.id">
+                    <article class="rounded-xl border p-3 bg-white" style="border-color:var(--line)">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] uppercase tracking-wide font-semibold" style="color:var(--muted)" x-text="entry.entry_type"></span>
+                        <span class="text-xs" style="color:var(--muted)" x-text="formatDate(entry.created_at)"></span>
+                      </div>
+                      <p class="text-sm mt-2 whitespace-pre-wrap" x-text="entry.content"></p>
+                    </article>
+                  </template>
+                  <p x-show="entries.length === 0" class="text-sm" style="color:var(--muted)">No memories yet.</p>
+                </div>
+              </div>
+            </section>
+          </template>
+
+          <template x-if="view === 'reflection' && selectedReflection()">
+            <section class="space-y-4 slide">
+              <div class="panel p-4">
+                <h2 class="text-2xl" x-text="reflectionTitle(selectedReflection())"></h2>
+                <p class="text-sm mt-1" style="color:var(--muted)" x-text="formatMonth(selectedReflection().month_key)"></p>
+                <div class="mt-3 space-y-2">
+                  <template x-for="(bullet, idx) in selectedReflection().summary_bullets" :key="idx">
+                    <p class="text-sm rounded-lg px-3 py-2 bg-white border" style="border-color:var(--line)">
+                      <span class="font-semibold">•</span>
+                      <span x-text="bullet"></span>
+                    </p>
+                  </template>
+                  <p x-show="selectedReflection().summary_bullets.length === 0" class="text-sm" style="color:var(--muted)">No bullets available for this month yet.</p>
+                </div>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2" x-show="isReflectionDue(selectedReflection())">
+                  <button
+                    @click="generateDraftFromReflection"
+                    class="rounded-xl px-4 py-3 text-white font-semibold"
+                    style="background:var(--deep)">
+                    Generate Draft
+                  </button>
+                  <button
+                    @click="startManualFromReflection"
+                    class="rounded-xl px-4 py-3 border font-semibold bg-white"
+                    style="border-color:var(--line)">
+                    Write or Dictate
+                  </button>
+                </div>
+                <p x-show="!isReflectionDue(selectedReflection())" class="text-sm mt-4" style="color:var(--muted)">
+                  Reflection only this month. Letter actions will appear when this person is due.
+                </p>
+              </div>
+            </section>
+          </template>
+
+          <template x-if="view === 'composer' && selectedLetter">
+            <section class="space-y-4 slide">
+              <div class="panel p-4">
+                <h2 class="text-2xl">Letter Composer</h2>
+                <p class="text-sm mt-1" style="color:var(--muted)">
+                  Dictation first, typing second. Use AI polish only if you want cleanup.
+                </p>
+                <input
+                  x-model="selectedLetter.title"
+                  class="w-full mt-3 rounded-xl border px-3 py-2 bg-white"
+                  style="border-color:var(--line)"
+                  placeholder="Letter title">
+                <textarea
+                  x-model="selectedLetter.content"
+                  rows="16"
+                  class="w-full mt-3 rounded-xl border px-3 py-2 bg-white"
+                  style="border-color:var(--line)"
+                  placeholder="Dear..., then your message..."></textarea>
+                <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    @click="toggleLetterDictation"
+                    class="rounded-lg px-3 py-2 text-xs font-semibold border bg-white"
+                    :class="letterDictating ? 'text-red-700 border-red-300 bg-red-50' : ''"
+                    style="border-color:var(--line)">
+                    <span x-text="letterDictating ? 'Stop Dictation' : 'Start Dictation'"></span>
+                  </button>
+                  <button
+                    @click="saveLetter"
+                    class="rounded-lg px-3 py-2 text-xs font-semibold text-white"
+                    style="background:var(--deep)">
+                    Save
+                  </button>
+                  <button
+                    @click="sealLetter"
+                    class="rounded-lg px-3 py-2 text-xs font-semibold border bg-white"
+                    style="border-color:var(--line)">
+                    Seal
+                  </button>
+                  <button
+                    @click="sendLetter"
+                    class="rounded-lg px-3 py-2 text-xs font-semibold text-white"
+                    style="background:linear-gradient(135deg,var(--brand),var(--brand-2));">
+                    Send
+                  </button>
+                </div>
+                <button
+                  @click="polishLetter"
+                  class="mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold border bg-white"
+                  style="border-color:var(--line)">
+                  Polish with AI
+                </button>
+                <p x-show="dictationPreview" class="text-xs mt-2" style="color:var(--muted)">
+                  Dictation captured: <span x-text="dictationPreview"></span>
+                </p>
+              </div>
+            </section>
+          </template>
+        </main>
+
+        <div
+          x-show="personSettingsOpen && selectedPerson()"
+          class="fixed inset-0 z-40 bg-black/35 flex items-end sm:items-center justify-center p-3"
+          x-transition>
+          <div class="panel w-full max-w-lg p-4 max-h-[90vh] overflow-auto">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl">Person Settings</h3>
+              <button @click="personSettingsOpen = false" class="text-xs font-semibold">Close</button>
+            </div>
+            <div class="mt-3 space-y-2">
+              <input x-model="personDraft.name" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Name">
+              <div class="grid grid-cols-2 gap-2">
+                <select x-model="personDraft.relationship_type" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                  <template x-for="opt in relationshipOptions" :key="opt.value">
+                    <option :value="opt.value" x-text="opt.label"></option>
+                  </template>
+                </select>
+                <select x-model="personDraft.letter_frequency" class="rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)">
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+              <input x-model="personDraft.email" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Email">
+              <input x-model="personDraft.signature_name" class="w-full rounded-lg px-3 py-2 border bg-white" style="border-color:var(--line)" placeholder="Signature override (optional)">
+              <div class="rounded-lg border p-3 bg-white" style="border-color:var(--line)">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-xs uppercase tracking-wide font-semibold" style="color:var(--muted)">Milestones</p>
+                  <button @click="addMilestoneDraft" class="text-xs font-semibold">Add</button>
+                </div>
+                <div class="space-y-2">
+                  <template x-for="(m, idx) in personDraft.milestones" :key="idx">
+                    <div class="grid grid-cols-[1fr,1fr,auto] gap-2">
+                      <select x-model="m.label" class="rounded-lg px-2 py-2 border bg-white text-sm" style="border-color:var(--line)">
+                        <template x-for="opt in milestoneOptions" :key="opt">
+                          <option :value="opt" x-text="opt"></option>
+                        </template>
+                      </select>
+                      <input x-model="m.date" type="date" class="rounded-lg px-2 py-2 border bg-white text-sm" style="border-color:var(--line)">
+                      <button @click="removeMilestoneDraft(idx)" class="text-xs text-red-700">Remove</button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <button
+                @click="savePersonSettings"
+                class="w-full rounded-xl px-4 py-3 text-white font-semibold"
+                style="background:var(--deep)">
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p
+          x-show="toast"
+          x-text="toast"
+          class="fixed z-50 bottom-4 left-1/2 -translate-x-1/2 bg-black/85 text-white text-sm px-4 py-2 rounded-lg">
+        </p>
+      </div>
+    </template>
+  </div>
+
+  <script>
+    function dearOnesApp() {
+      return {
+        apiBases: ["/api", "/dear-son/api"],
+        activeApiBase: null,
+        loading: true,
+        authenticated: false,
+        error: "",
+        bootError: "",
+        toast: "",
+        view: "home",
+        password: "",
+        profile: {
+          first_name: "",
+          default_signature_name: "",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          email: ""
+        },
+        people: [],
+        reflections: [],
+        quietPrompts: [],
+        dueByPerson: {},
+        showAddPerson: false,
+        addPersonForm: {
+          name: "",
+          relationship_type: "child",
+          letter_frequency: "monthly",
+          email: ""
+        },
+        onboarding: {
+          profile: {
+            first_name: "",
+            default_signature_name: "",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            email: ""
+          },
+          people: [
+            {
+              name: "",
+              relationship_type: "child",
+              letter_frequency: "monthly",
+              email: "",
+              milestone_label: "birthday",
+              milestone_date: ""
+            }
+          ]
+        },
+        selectedPersonId: null,
+        selectedReflectionId: null,
+        entries: [],
+        letters: [],
+        selectedLetter: null,
+        newEntryContent: "",
+        isRecording: false,
+        mediaRecorder: null,
+        mediaStream: null,
+        recordedChunks: [],
+        recordingTimer: null,
+        recordingSeconds: 0,
+        voiceTranscript: "",
+        voiceTranscriptTimer: null,
+        personSettingsOpen: false,
+        personDraft: {
+          name: "",
+          relationship_type: "child",
+          letter_frequency: "monthly",
+          email: "",
+          signature_name: "",
+          milestones: []
+        },
+        letterDictating: false,
+        letterRecognizer: null,
+        dictationPreview: "",
+        localDraftsKey: "dearones_local_drafts_v1",
+        relationshipOptions: [
+          { value: "child", label: "Child" },
+          { value: "parent", label: "Parent" },
+          { value: "partner", label: "Partner" },
+          { value: "sibling", label: "Sibling" },
+          { value: "grandparent", label: "Grandparent" },
+          { value: "friend", label: "Friend" },
+          { value: "other", label: "Other" }
+        ],
+        milestoneOptions: ["birthday", "anniversary", "graduation", "new baby", "memorial", "custom"],
+
+        async init() {
+          await this.bootstrap();
+        },
+
+        async bootstrap() {
+          this.loading = true;
+          this.bootError = "";
+
+          try {
+            this.people = await this.fetchPeople();
+            this.authenticated = true;
+          } catch (err) {
+            if (err.status === 401) {
+              this.authenticated = false;
+            } else {
+              this.bootError = err.message || "Failed to load app";
+              this.authenticated = false;
+            }
+            this.loading = false;
+            return;
+          }
+
+          await Promise.all([this.fetchProfile(), this.fetchCurrentReflections()]);
+          await this.refreshDueStatus();
+
+          if (this.people.length === 0) {
+            this.prepareOnboardingFromProfile();
+            this.view = "onboarding";
+          } else {
+            this.view = "home";
+          }
+
+          this.loading = false;
+        },
+
+        async request(base, path, options = {}) {
+          const res = await fetch(`${base}${path}`, {
+            credentials: "include",
+            ...options,
+            headers: {
+              ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+              ...(options.headers || {})
+            }
+          });
+
+          let data = null;
+          const text = await res.text();
+          if (text) {
+            try {
+              data = JSON.parse(text);
+            } catch (_) {
+              data = { detail: text };
+            }
+          }
+
+          return { res, data };
+        },
+
+        async api(path, options = {}, opts = {}) {
+          const allow404 = opts.allow404 === true;
+          const allow401 = opts.allow401 === true;
+          const bases = this.activeApiBase
+            ? [this.activeApiBase, ...this.apiBases.filter((b) => b !== this.activeApiBase)]
+            : [...this.apiBases];
+
+          let lastError = null;
+          for (const base of bases) {
+            let out;
+            try {
+              out = await this.request(base, path, options);
+            } catch (networkErr) {
+              lastError = networkErr;
+              continue;
+            }
+
+            const status = out.res.status;
+            if (status === 404) {
+              if (allow404) return null;
+              lastError = Object.assign(new Error("Not found"), { status: 404 });
+              continue;
+            }
+            if (status === 401) {
+              if (!allow401) {
+                this.authenticated = false;
+                this.view = "home";
+              }
+              const err = Object.assign(new Error("Authentication required"), { status: 401 });
+              throw err;
+            }
+            if (!out.res.ok) {
+              const message = out.data?.detail || "Request failed";
+              const err = Object.assign(new Error(message), { status });
+              throw err;
+            }
+
+            this.activeApiBase = base;
+            return out.data || {};
+          }
+
+          if (allow404 && lastError && lastError.status === 404) return null;
+          if (lastError instanceof Error) throw lastError;
+          throw new Error("Network request failed");
+        },
+
+        async login() {
+          this.error = "";
+          try {
+            await this.api("/auth/login", { method: "POST", body: JSON.stringify({ password: this.password }) }, { allow401: true });
+            this.password = "";
+            await this.bootstrap();
+          } catch (err) {
+            this.error = err.message || "Login failed";
+          }
+        },
+
+        async logout() {
+          try {
+            await this.api("/auth/logout", { method: "POST" }, { allow401: true });
+          } catch (_) {}
+          this.authenticated = false;
+          this.selectedPersonId = null;
+          this.selectedReflectionId = null;
+          this.selectedLetter = null;
+          this.view = "home";
+        },
+
+        async fetchProfile() {
+          try {
+            const profile = await this.api("/profile", {}, { allow404: true });
+            if (profile) {
+              this.profile = {
+                first_name: profile.first_name || "",
+                default_signature_name: profile.default_signature_name || profile.first_name || "",
+                timezone: profile.timezone || this.profile.timezone,
+                email: profile.email || ""
+              };
+            } else {
+              this.profile = {
+                ...this.profile,
+                first_name: this.profile.first_name || "You",
+                default_signature_name: this.profile.default_signature_name || this.profile.first_name || "You",
+                email: this.profile.email || ""
+              };
+            }
+          } catch (_) {
+            this.profile = {
+              ...this.profile,
+              first_name: this.profile.first_name || "You",
+              default_signature_name: this.profile.default_signature_name || this.profile.first_name || "You",
+              email: this.profile.email || ""
+            };
+          }
+        },
+
+        async saveProfile(profile) {
+          try {
+            await this.api("/profile", { method: "PUT", body: JSON.stringify(profile) }, { allow404: true });
+          } catch (_) {}
+        },
+
+        normalizePerson(p) {
+          const relationshipType = p.relationship_type || "child";
+          return {
+            id: p.id,
+            name: p.name || "",
+            relationship_type: relationshipType,
+            relationship_label: p.relationship_label || "",
+            email: p.email || "",
+            letter_frequency: p.letter_frequency || p.delivery_frequency || this.defaultFrequencyFor(relationshipType),
+            signature_name: p.signature_name || "",
+            entry_count: p.entry_count || 0,
+            last_entry_at: p.last_entry_at || null,
+            milestones: Array.isArray(p.milestones) ? p.milestones : this.milestonesFromLegacyDob(p.dob),
+            due_for_letter: typeof p.due_for_letter === "boolean" ? p.due_for_letter : null,
+            blank_months: Number(p.blank_months || 0)
+          };
+        },
+
+        milestonesFromLegacyDob(dob) {
+          if (!dob) return [];
+          return [{ label: "birthday", date: dob, is_recurring: true }];
+        },
+
+        async fetchPeople() {
+          let data = await this.api("/people", {}, { allow404: true });
+          if (data === null) {
+            data = await this.api("/children", {}, { allow404: true });
+          }
+          if (!Array.isArray(data)) return [];
+          return data.map((p) => this.normalizePerson(p));
+        },
+
+        async createPerson(payload) {
+          let person = await this.api("/people", { method: "POST", body: JSON.stringify(payload) }, { allow404: true });
+          if (person === null) {
+            person = await this.api("/children", {
+              method: "POST",
+              body: JSON.stringify({ name: payload.name, email: payload.email || null, dob: null })
+            });
+          }
+          return this.normalizePerson(person);
+        },
+
+        async updatePerson(personId, payload) {
+          const updated = await this.api(`/people/${personId}`, { method: "PUT", body: JSON.stringify(payload) }, { allow404: true });
+          if (updated === null) return null;
+          return this.normalizePerson(updated);
+        },
+
+        async fetchEntriesFor(personId) {
+          let entries = await this.api(`/people/${personId}/entries`, {}, { allow404: true });
+          if (entries === null) {
+            entries = await this.api(`/children/${personId}/entries`, {}, { allow404: true });
+          }
+          return Array.isArray(entries) ? entries : [];
+        },
+
+        async fetchLettersFor(personId) {
+          let letters = await this.api(`/people/${personId}/letters`, {}, { allow404: true });
+          if (letters === null) {
+            letters = await this.api(`/children/${personId}/letters`, {}, { allow404: true });
+          }
+          const serverLetters = Array.isArray(letters) ? letters : [];
+          const local = this.readLocalDrafts().filter((d) => d.person_id === personId);
+          return [...local, ...serverLetters];
+        },
+
+        normalizeReflection(ref) {
+          const reflection = ref && ref.reflection ? ref.reflection : ref;
+          return {
+            id: reflection.id || `ref-${reflection.person_id || ref?.person?.id}-${reflection.month_key || "unknown"}`,
+            person_id: reflection.person_id || ref?.person?.id,
+            month_key: reflection.month_key || "",
+            summary_bullets: Array.isArray(reflection.summary_bullets)
+              ? reflection.summary_bullets
+              : Array.isArray(reflection.summary_bullets_json)
+                ? reflection.summary_bullets_json
+                : [],
+            due_for_letter: Boolean(reflection.due_for_letter || ref.due_for_letter || ref.is_due || ref.letter_due),
+            quiet_streak: Number(reflection.quiet_streak || ref.quiet_streak || 0)
+          };
+        },
+
+        async fetchCurrentReflections() {
+          const data = await this.api("/reflections/current", {}, { allow404: true });
+          if (data === null) {
+            this.reflections = [];
+            this.quietPrompts = [];
+            return;
+          }
+          const list = Array.isArray(data) ? data : (Array.isArray(data.reflections) ? data.reflections : []);
+          this.reflections = list.map((r) => this.normalizeReflection(r));
+
+          const quietPeople = Array.isArray(data.quiet_people) ? data.quiet_people : [];
+          if (quietPeople.length > 0) {
+            this.quietPrompts = quietPeople.map((p) => this.normalizePerson(p));
+          } else {
+            const reengagement = Array.isArray(data.reengagement) ? data.reengagement : [];
+            if (reengagement.length > 0) {
+              this.quietPrompts = reengagement
+                .map((item) => item.person || null)
+                .filter(Boolean)
+                .map((p) => this.normalizePerson(p));
+              return;
+            }
+            this.quietPrompts = this.reflections
+              .filter((r) => r.quiet_streak >= 2)
+              .map((r) => this.findPersonById(r.person_id))
+              .filter(Boolean);
+          }
+        },
+
+        async refreshDueStatus() {
+          const next = {};
+          for (const person of this.people) {
+            if (typeof person.due_for_letter === "boolean") {
+              next[person.id] = person.due_for_letter;
+              continue;
+            }
+            const letters = await this.fetchLettersFor(person.id);
+            next[person.id] = this.computeDueFromLetters(person, letters);
+          }
+          this.dueByPerson = next;
+        },
+
+        computeDueFromLetters(person, letters) {
+          const frequencyMonths = this.frequencyInMonths(person.letter_frequency);
+          const sentLetters = letters.filter((l) => l.status === "sent");
+          if (sentLetters.length === 0) return true;
+
+          const lastSent = sentLetters
+            .map((l) => new Date(l.created_at || l.sent_at || 0))
+            .filter((d) => !isNaN(d))
+            .sort((a, b) => b.getTime() - a.getTime())[0];
+          if (!lastSent) return true;
+
+          const now = new Date();
+          const monthDiff = (now.getFullYear() - lastSent.getFullYear()) * 12 + (now.getMonth() - lastSent.getMonth());
+          return monthDiff >= frequencyMonths;
+        },
+
+        frequencyInMonths(freq) {
+          if (freq === "monthly") return 1;
+          if (freq === "quarterly") return 3;
+          return 12;
+        },
+
+        defaultFrequencyFor(relationshipType) {
+          const defaults = {
+            child: "monthly",
+            partner: "quarterly",
+            parent: "quarterly",
+            sibling: "yearly",
+            grandparent: "quarterly",
+            friend: "yearly",
+            other: "yearly"
+          };
+          return defaults[relationshipType] || "yearly";
+        },
+
+        prepareOnboardingFromProfile() {
+          this.onboarding.profile = {
+            first_name: this.profile.first_name || "",
+            default_signature_name: this.profile.default_signature_name || "",
+            timezone: this.profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            email: this.profile.email || ""
+          };
+        },
+
+        addOnboardingPerson() {
+          if (this.onboarding.people.length >= 3) return;
+          this.onboarding.people.push({
+            name: "",
+            relationship_type: "friend",
+            letter_frequency: this.defaultFrequencyFor("friend"),
+            email: "",
+            milestone_label: "birthday",
+            milestone_date: ""
+          });
+        },
+
+        removeOnboardingPerson(index) {
+          if (this.onboarding.people.length <= 1) return;
+          this.onboarding.people.splice(index, 1);
+        },
+
+        async submitOnboarding() {
+          if (!this.onboarding.profile.first_name.trim()) {
+            this.notify("Please add your first name.");
+            return;
+          }
+          const validPeople = this.onboarding.people.filter((p) => p.name.trim());
+          if (validPeople.length === 0) {
+            this.notify("Add at least one person.");
+            return;
+          }
+
+          const cleanProfile = {
+            first_name: this.onboarding.profile.first_name.trim(),
+            default_signature_name: (this.onboarding.profile.default_signature_name || this.onboarding.profile.first_name).trim(),
+            timezone: this.onboarding.profile.timezone || "UTC",
+            email: this.onboarding.profile.email ? this.onboarding.profile.email.trim() : null
+          };
+          await this.saveProfile(cleanProfile);
+          this.profile = { ...cleanProfile };
+
+          for (const p of validPeople.slice(0, 3)) {
+            const payload = {
+              name: p.name.trim(),
+              relationship_type: p.relationship_type,
+              letter_frequency: p.letter_frequency || this.defaultFrequencyFor(p.relationship_type),
+              email: p.email ? p.email.trim() : null,
+              milestones: p.milestone_date
+                ? [{ label: p.milestone_label || "birthday", date: p.milestone_date, is_recurring: true }]
+                : []
+            };
+            await this.createPerson(payload);
+          }
+
+          this.people = await this.fetchPeople();
+          await this.fetchCurrentReflections();
+          await this.refreshDueStatus();
+          this.view = "home";
+          this.notify("Onboarding complete");
+        },
+
+        sortedReflections() {
+          return [...this.reflections].sort((a, b) => (b.month_key || "").localeCompare(a.month_key || ""));
+        },
+
+        previewBullet(ref) {
+          if (Array.isArray(ref.summary_bullets) && ref.summary_bullets.length > 0) return ref.summary_bullets[0];
+          return "Open reflection";
+        },
+
+        reflectionTitle(ref) {
+          const person = this.findPersonById(ref.person_id);
+          const name = person ? person.name : "Someone";
+          return `${name}'s reflection`;
+        },
+
+        isReflectionDue(ref) {
+          if (typeof ref.due_for_letter === "boolean") return ref.due_for_letter;
+          return Boolean(this.dueByPerson[ref.person_id]);
+        },
+
+        selectedPerson() {
+          return this.findPersonById(this.selectedPersonId);
+        },
+
+        selectedReflection() {
+          return this.reflections.find((r) => String(r.id) === String(this.selectedReflectionId)) || null;
+        },
+
+        findPersonById(id) {
+          return this.people.find((p) => String(p.id) === String(id)) || null;
+        },
+
+        async createPersonFromHome() {
+          if (!this.addPersonForm.name.trim()) {
+            this.notify("Name is required.");
+            return;
+          }
+
+          const created = await this.createPerson({
+            name: this.addPersonForm.name.trim(),
+            relationship_type: this.addPersonForm.relationship_type,
+            letter_frequency: this.addPersonForm.letter_frequency || this.defaultFrequencyFor(this.addPersonForm.relationship_type),
+            email: this.addPersonForm.email ? this.addPersonForm.email.trim() : null
+          });
+          this.people.push(created);
+          this.addPersonForm = { name: "", relationship_type: "child", letter_frequency: "monthly", email: "" };
+          this.showAddPerson = false;
+          await this.refreshDueStatus();
+          this.notify("Person added");
+        },
+
+        async openPerson(person) {
+          this.selectedPersonId = person.id;
+          this.view = "person";
+          this.voiceTranscript = "";
+          clearTimeout(this.voiceTranscriptTimer);
+          await Promise.all([this.reloadEntries(), this.reloadLetters()]);
+        },
+
+        openReflection(ref) {
+          this.selectedReflectionId = ref.id;
+          this.selectedPersonId = ref.person_id;
+          this.view = "reflection";
+        },
+
+        async reloadEntries() {
+          if (!this.selectedPersonId) return;
+          this.entries = await this.fetchEntriesFor(this.selectedPersonId);
+        },
+
+        async reloadLetters() {
+          if (!this.selectedPersonId) return;
+          this.letters = await this.fetchLettersFor(this.selectedPersonId);
+        },
+
+        async addTextEntry() {
+          const content = this.newEntryContent.trim();
+          if (!content || !this.selectedPersonId) return;
+
+          let saved = await this.api(`/people/${this.selectedPersonId}/entries`, {
+            method: "POST",
+            body: JSON.stringify({ content, entry_type: "text" })
+          }, { allow404: true });
+
+          if (saved === null) {
+            saved = await this.api(`/children/${this.selectedPersonId}/entries`, {
+              method: "POST",
+              body: JSON.stringify({ content, entry_type: "text", tags: null })
+            });
+          }
+
+          this.newEntryContent = "";
+          await Promise.all([this.reloadEntries(), this.fetchPeople().then((p) => { this.people = p; })]);
+          this.notify("Memory saved");
+          return saved;
+        },
+
+        async toggleRecording() {
+          if (this.isRecording) {
+            this.stopRecording();
+          } else {
+            await this.startRecording();
+          }
+        },
+
+        async startRecording() {
+          try {
+            this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.recordedChunks = [];
+            this.mediaRecorder = new MediaRecorder(this.mediaStream);
+            this.mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) this.recordedChunks.push(event.data);
+            };
+            this.mediaRecorder.onstop = async () => {
+              await this.uploadVoice();
+              if (this.mediaStream) this.mediaStream.getTracks().forEach((t) => t.stop());
+            };
+            this.mediaRecorder.start();
+            this.isRecording = true;
+            this.recordingSeconds = 0;
+            this.recordingTimer = setInterval(() => {
+              this.recordingSeconds += 1;
+            }, 1000);
+          } catch (_) {
+            this.notify("Microphone unavailable.");
+          }
+        },
+
+        stopRecording() {
+          if (!this.mediaRecorder) return;
+          this.mediaRecorder.stop();
+          this.isRecording = false;
+          clearInterval(this.recordingTimer);
+        },
+
+        async uploadVoice() {
+          if (!this.selectedPersonId) return;
+          try {
+            const blob = new Blob(this.recordedChunks, { type: "audio/webm" });
+            const formData = new FormData();
+            formData.append("audio", blob, "memory.webm");
+
+            let data = await this.api(`/people/${this.selectedPersonId}/entries/voice`, { method: "POST", body: formData }, { allow404: true });
+            if (data === null) {
+              data = await this.api(`/children/${this.selectedPersonId}/entries/voice`, { method: "POST", body: formData });
+            }
+
+            this.showVoiceTranscript(data?.transcription || "Voice entry saved");
+            await Promise.all([this.reloadEntries(), this.fetchPeople().then((p) => { this.people = p; })]);
+            this.notify("Voice entry saved");
+          } catch (err) {
+            this.notify(err.message || "Voice upload failed");
+          }
+        },
+
+        async generateDraftForPerson() {
+          const person = this.selectedPerson();
+          if (!person) return;
+          try {
+            let letter = await this.api(`/people/${person.id}/generate-letter`, { method: "POST", body: JSON.stringify({}) }, { allow404: true });
+            if (letter === null) {
+              letter = await this.api(`/children/${person.id}/generate-letter`, { method: "POST", body: JSON.stringify({}) });
+            }
+            this.selectedLetter = { ...letter, person_id: person.id };
+            this.view = "composer";
+            await this.reloadLetters();
+            this.notify("Draft generated");
+          } catch (err) {
+            this.notify(err.message || "Could not generate draft");
+          }
+        },
+
+        async generateDraftFromReflection() {
+          const ref = this.selectedReflection();
+          if (!ref) return;
+          try {
+            let letter = await this.api(`/reflections/${ref.id}/generate-letter`, { method: "POST", body: JSON.stringify({}) }, { allow404: true });
+            if (letter === null) {
+              const person = this.findPersonById(ref.person_id);
+              if (!person) throw new Error("Person not found");
+              letter = await this.api(`/people/${person.id}/generate-letter`, { method: "POST", body: JSON.stringify({}) }, { allow404: true });
+              if (letter === null) {
+                letter = await this.api(`/children/${person.id}/generate-letter`, { method: "POST", body: JSON.stringify({}) });
+              }
+            }
+            this.selectedLetter = { ...letter, person_id: ref.person_id };
+            this.view = "composer";
+            await this.reloadLetters();
+            this.notify("Draft generated");
+          } catch (err) {
+            this.notify(err.message || "Could not generate draft");
+          }
+        },
+
+        startManualFromReflection() {
+          const ref = this.selectedReflection();
+          const person = ref ? this.findPersonById(ref.person_id) : null;
+          if (!person) {
+            this.notify("Missing person context");
+            return;
+          }
+          this.selectedLetter = this.makeManualDraft(person, ref.month_key);
+          this.view = "composer";
+        },
+
+        makeManualDraft(person, monthKey) {
+          const monthLabel = monthKey ? this.formatMonth(monthKey) : "";
+          const signature = this.signatureForPerson(person);
+          const intro = monthLabel ? `Thinking back on ${monthLabel},\n\n` : "\n";
+          return {
+            local_id: `local-${Date.now()}`,
+            id: null,
+            person_id: person.id,
+            status: "draft",
+            title: monthLabel ? `Letter - ${monthLabel}` : `Letter - ${new Date().toLocaleDateString()}`,
+            content: `Dear ${person.name},\n\n${intro}Love,\n${signature}`,
+            created_at: new Date().toISOString(),
+            origin: "manual"
+          };
+        },
+
+        signatureForPerson(person) {
+          return person.signature_name || this.profile.default_signature_name || this.profile.first_name || "You";
+        },
+
+        openLetter(letter) {
+          this.selectedLetter = { ...letter };
+          this.view = "composer";
+        },
+
+        async saveLetter() {
+          if (!this.selectedLetter) return;
+
+          if (this.selectedLetter.id) {
+            const updated = await this.api(`/letters/${this.selectedLetter.id}`, {
+              method: "PUT",
+              body: JSON.stringify({
+                title: this.selectedLetter.title,
+                content: this.selectedLetter.content,
+                status: this.selectedLetter.status || "draft"
+              })
+            });
+            this.selectedLetter = { ...updated, person_id: this.selectedLetter.person_id };
+            await this.reloadLetters();
+            this.notify("Letter saved");
+            return;
+          }
+
+          const payload = {
+            person_id: this.selectedLetter.person_id,
+            title: this.selectedLetter.title,
+            content: this.selectedLetter.content,
+            status: this.selectedLetter.status || "draft",
+            origin: this.selectedLetter.origin || "manual"
+          };
+          let created = await this.api(`/people/${this.selectedLetter.person_id}/letters`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }, { allow404: true });
+          if (created === null) {
+            created = await this.api("/letters", { method: "POST", body: JSON.stringify(payload) }, { allow404: true });
+          }
+
+          if (created === null) {
+            this.persistLocalDraft(this.selectedLetter);
+            await this.reloadLetters();
+            this.notify("Saved locally (manual letter endpoint unavailable)");
+            return;
+          }
+
+          this.selectedLetter = { ...created, person_id: this.selectedLetter.person_id };
+          this.removeLocalDraft(this.selectedLetter.local_id);
+          await this.reloadLetters();
+          this.notify("Letter saved");
+        },
+
+        async sealLetter() {
+          if (!this.selectedLetter) return;
+          this.selectedLetter.status = "sealed";
+          await this.saveLetter();
+        },
+
+        async sendLetter() {
+          if (!this.selectedLetter) return;
+          if (!this.selectedLetter.id) {
+            this.notify("Save this letter to server before sending.");
+            return;
+          }
+          try {
+            const result = await this.api(`/letters/${this.selectedLetter.id}/send`, { method: "POST", body: JSON.stringify({}) });
+            this.selectedLetter = result.letter || this.selectedLetter;
+            await this.reloadLetters();
+            await this.refreshDueStatus();
+            this.notify("Letter sent");
+          } catch (err) {
+            this.notify(err.message || "Send failed");
+          }
+        },
+
+        async polishLetter() {
+          if (!this.selectedLetter) return;
+          if (!this.selectedLetter.id) {
+            this.notify("Save letter first, then polish.");
+            return;
+          }
+          try {
+            const result = await this.api(`/letters/${this.selectedLetter.id}/polish`, {
+              method: "POST",
+              body: JSON.stringify({
+                content: this.selectedLetter.content,
+                style: "conservative"
+              })
+            }, { allow404: true });
+
+            if (result === null) {
+              this.notify("AI polish endpoint not available yet.");
+              return;
+            }
+
+            if (result.letter) {
+              this.selectedLetter = { ...result.letter, person_id: this.selectedLetter.person_id };
+            } else if (typeof result.content === "string") {
+              this.selectedLetter.content = result.content;
+            }
+            await this.reloadLetters();
+            this.notify("Polished with AI");
+          } catch (err) {
+            this.notify(err.message || "Polish failed");
+          }
+        },
+
+        toggleLetterDictation() {
+          if (this.letterDictating) {
+            this.stopLetterDictation();
+          } else {
+            this.startLetterDictation();
+          }
+        },
+
+        startLetterDictation() {
+          const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!Recognition) {
+            this.notify("Browser dictation is not available.");
+            return;
+          }
+
+          this.letterRecognizer = new Recognition();
+          this.letterRecognizer.lang = "en-US";
+          this.letterRecognizer.interimResults = true;
+          this.letterRecognizer.continuous = true;
+
+          let finalChunk = "";
+          this.letterRecognizer.onresult = (event) => {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; i += 1) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalChunk += transcript + " ";
+              } else {
+                interim += transcript;
+              }
+            }
+            this.dictationPreview = `${finalChunk}${interim}`.trim();
+          };
+
+          this.letterRecognizer.onend = () => {
+            if (finalChunk.trim() && this.selectedLetter) {
+              this.appendDictationToLetter(finalChunk.trim());
+            }
+            this.letterDictating = false;
+          };
+
+          this.letterDictating = true;
+          this.dictationPreview = "";
+          this.letterRecognizer.start();
+        },
+
+        stopLetterDictation() {
+          if (this.letterRecognizer) this.letterRecognizer.stop();
+          this.letterDictating = false;
+        },
+
+        appendDictationToLetter(text) {
+          if (!this.selectedLetter) return;
+          const closing = `\nLove,\n${this.signatureForPerson(this.findPersonById(this.selectedLetter.person_id) || {})}`;
+          if (this.selectedLetter.content.includes(closing)) {
+            this.selectedLetter.content = this.selectedLetter.content.replace(closing, `${text}\n\nLove,\n${this.signatureForPerson(this.findPersonById(this.selectedLetter.person_id) || {})}`);
+          } else {
+            this.selectedLetter.content = `${this.selectedLetter.content}\n\n${text}`;
+          }
+        },
+
+        openPersonSettings() {
+          const person = this.selectedPerson();
+          if (!person) return;
+          this.personDraft = {
+            name: person.name,
+            relationship_type: person.relationship_type,
+            letter_frequency: person.letter_frequency,
+            email: person.email || "",
+            signature_name: person.signature_name || "",
+            milestones: Array.isArray(person.milestones) ? person.milestones.map((m) => ({ ...m })) : []
+          };
+          this.personSettingsOpen = true;
+        },
+
+        addMilestoneDraft() {
+          this.personDraft.milestones.push({ label: "birthday", date: "", is_recurring: true });
+        },
+
+        removeMilestoneDraft(index) {
+          this.personDraft.milestones.splice(index, 1);
+        },
+
+        async savePersonSettings() {
+          const person = this.selectedPerson();
+          if (!person) return;
+
+          const payload = {
+            name: this.personDraft.name,
+            relationship_type: this.personDraft.relationship_type,
+            letter_frequency: this.personDraft.letter_frequency,
+            email: this.personDraft.email || null,
+            signature_name: this.personDraft.signature_name || null,
+            milestones: this.personDraft.milestones.filter((m) => m.date)
+          };
+          const updated = await this.updatePerson(person.id, payload);
+          if (!updated) {
+            this.notify("Settings endpoint unavailable on this backend.");
+            return;
+          }
+
+          const idx = this.people.findIndex((p) => p.id === person.id);
+          if (idx >= 0) this.people[idx] = updated;
+          this.personSettingsOpen = false;
+          await this.refreshDueStatus();
+          this.notify("Settings saved");
+        },
+
+        readLocalDrafts() {
+          try {
+            const raw = localStorage.getItem(this.localDraftsKey);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (_) {
+            return [];
+          }
+        },
+
+        writeLocalDrafts(list) {
+          localStorage.setItem(this.localDraftsKey, JSON.stringify(list));
+        },
+
+        persistLocalDraft(draft) {
+          const list = this.readLocalDrafts();
+          const key = draft.local_id || `local-${Date.now()}`;
+          const next = [...list.filter((d) => d.local_id !== key), { ...draft, local_id: key }];
+          this.writeLocalDrafts(next);
+          this.selectedLetter = { ...draft, local_id: key };
+        },
+
+        removeLocalDraft(localId) {
+          if (!localId) return;
+          const list = this.readLocalDrafts().filter((d) => d.local_id !== localId);
+          this.writeLocalDrafts(list);
+        },
+
+        goHome() {
+          this.selectedReflectionId = null;
+          this.selectedLetter = null;
+          this.view = "home";
+        },
+
+        headerTitle() {
+          if (this.view === "person" && this.selectedPerson()) return `Dear ${this.selectedPerson().name}`;
+          if (this.view === "reflection" && this.selectedReflection()) return "Monthly Reflection";
+          if (this.view === "composer") return "Letter Draft";
+          if (this.view === "onboarding") return "Welcome";
+          return "Dear Ones";
+        },
+
+        headerSubtitle() {
+          if (this.view === "person" && this.selectedPerson()) {
+            return `${this.labelForRelationship(this.selectedPerson().relationship_type, this.selectedPerson().relationship_label)} memories`;
+          }
+          if (this.view === "reflection") return "A clean outline of what you captured";
+          if (this.view === "composer") return "Write, dictate, then polish if needed";
+          if (this.view === "onboarding") return "Set your voice and your people";
+          return "Chronological memories, relationship-aware letters";
+        },
+
+        labelForRelationship(value, custom) {
+          const found = this.relationshipOptions.find((o) => o.value === value);
+          if (value === "other" && custom) return custom;
+          return found ? found.label : "Other";
+        },
+
+        formatDate(value) {
+          if (!value) return "No entries yet";
+          const d = new Date(value);
+          if (isNaN(d)) return value;
+          return d.toLocaleDateString([], { month: "short", day: "numeric" });
+        },
+
+        formatMonth(monthKey) {
+          if (!monthKey || !monthKey.includes("-")) return monthKey || "Unknown month";
+          const [y, m] = monthKey.split("-").map((x) => Number(x));
+          const d = new Date(y, (m || 1) - 1, 1);
+          if (isNaN(d)) return monthKey;
+          return d.toLocaleDateString([], { month: "long", year: "numeric" });
+        },
+
+        formatTimer(total) {
+          const minutes = String(Math.floor(total / 60)).padStart(2, "0");
+          const seconds = String(total % 60).padStart(2, "0");
+          return `${minutes}:${seconds}`;
+        },
+
+        showVoiceTranscript(text) {
+          clearTimeout(this.voiceTranscriptTimer);
+          this.voiceTranscript = text;
+          this.voiceTranscriptTimer = setTimeout(() => {
+            this.voiceTranscript = "";
+          }, 5000);
+        },
+
+        notify(message) {
+          this.toast = message;
+          setTimeout(() => { this.toast = ""; }, 2600);
+        }
+      };
+    }
+  </script>
+</body>
+</html>
