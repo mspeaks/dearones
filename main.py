@@ -889,7 +889,7 @@ def generate_letter_text(person_row: sqlite3.Row, profile_row: sqlite3.Row, refl
             f"{source_text[:700]}\n\n"
             f"Love,\n{signature}"
         )
-    prompt = f"""You are ghostwriting a warm, personal letter from {profile_row['first_name']} to {recipient_name} ({relationship}).
+    prompt = f"""You ARE {profile_row['first_name']} writing a personal letter to {recipient_name} ({relationship}). Write in first person as {profile_row['first_name']}. Never refer to "{profile_row['first_name']}" in third person — you ARE the sender. Never say things like "{profile_row['first_name']}'s been telling me" or "your dad says" — you are the dad (or whoever the sender is).
 
 The sender signs off as: {signature}
 
@@ -1470,11 +1470,9 @@ def polish_letter(letter_id: int, payload: PolishLetterIn):
         if ANTHROPIC_API_KEY:
             rel = relationship_context(person_row=person)
             sig = person_signature(person, profile)
-            prompt = f"""You are helping someone write a warm, personal letter to someone they love.
-
-Recipient: {person['name']} ({rel})
+            prompt = f"""You ARE {profile['first_name']} rewriting your own letter to {person['name']} ({rel}). Write in first person as {profile['first_name']} — you are the sender, not a ghostwriter describing them. Never refer to "{profile['first_name']}" in third person.
 Sender signs off as: {sig}
-Optional instruction from sender: {payload.note or 'none'}
+Optional instruction: {payload.note or 'none'}
 
 Rewrite the letter below following these rules strictly:
 
