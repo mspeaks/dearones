@@ -889,26 +889,26 @@ def generate_letter_text(person_row: sqlite3.Row, profile_row: sqlite3.Row, refl
             f"{source_text[:700]}\n\n"
             f"Love,\n{signature}"
         )
-    prompt = f"""You are ghostwriting a personal letter.
-Recipient name: {recipient_name}
-Relationship context: {relationship}
-Sender first name: {profile_row['first_name']}
-Preferred signature: {signature}
+    prompt = f"""You are ghostwriting a warm, personal letter from {profile_row['first_name']} to {recipient_name} ({relationship}).
 
-Source reflection bullets:
+The sender signs off as: {signature}
+
+Source memories to draw from:
 {source_text}
 
-Constraints:
-- Be specific and emotionally honest
-- 3-5 paragraphs
-- Start exactly with "Dear {recipient_name},"
-- End with "Love," and then "{signature}"
-- Do not mention AI
+Write this letter following these rules:
+1. VOICE: Casual, intimate, real — the way a person actually talks to someone they love. Never formal.
+2. PERSPECTIVE: Address {recipient_name} directly as "you" throughout. Never refer to them in third person.
+3. BANNED PHRASES: "I hope this letter finds you well", "Sincerely", "Best regards", "I am writing to", "I wanted to take a moment".
+4. TONE: Match the relationship. For a child: warm, playful, tender — like a parent talking to their kid. For a partner: loving and personal. For a parent: respectful but warm.
+5. SPECIFICS: Use the real memories from the bullets above. Don't genericize them — the details are what make the letter meaningful.
+6. SIGN-OFF: Something natural. For a child: "Love you so much, {signature}" or "All my love, {signature}". Never "Sincerely".
+7. FORMAT: Start with "Dear {recipient_name}," — 3-5 paragraphs — end with a warm sign-off. Do not mention AI.
 """
     client = Anthropic(api_key=ANTHROPIC_API_KEY)
     response = client.messages.create(
         model=ANTHROPIC_MODEL,
-        max_tokens=900,
+        max_tokens=1200,
         temperature=0.7,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1468,20 +1468,31 @@ def polish_letter(letter_id: int, payload: PolishLetterIn):
         if not source_content.strip():
             raise HTTPException(status_code=400, detail="No content to polish")
         if ANTHROPIC_API_KEY:
-            prompt = f"""Revise this letter conservatively.
-Keep meaning and structure. Improve clarity lightly.
-Recipient: {person['name']}
-Preferred signature: {person_signature(person, profile)}
-Optional note: {payload.note or ''}
+            rel = relationship_context(person_row=person)
+            sig = person_signature(person, profile)
+            prompt = f"""You are helping someone write a warm, personal letter to someone they love.
 
-Letter:
+Recipient: {person['name']} ({rel})
+Sender signs off as: {sig}
+Optional instruction from sender: {payload.note or 'none'}
+
+Rewrite the letter below following these rules strictly:
+
+1. VOICE: Casual, warm, intimate — never formal. Ban these phrases: "I hope this letter finds you well", "Sincerely", "Best regards", "I wanted to take a moment", "I am writing to".
+2. PERSPECTIVE: Always address {person['name']} directly as "you" / "your". If the draft refers to {person['name']} in third person ("he said", "she did"), convert it to second person ("you said", "you did").
+3. SIGN-OFF: Natural for this relationship. For a child: "Love you so much", "All my love, {sig}", "Love always, {sig}". Never "Sincerely" or formal closings.
+4. TONE: Match the relationship type ({rel}). For a child: playful, tender, like a parent talking directly to their kid. Warm and real, not polished corporate prose.
+5. STRUCTURE: Keep it as a real letter — "Dear {person['name']}," opening, 3-5 natural paragraphs, warm sign-off. Don't pad or genericize.
+6. KEEP THE SPECIFICS: Preserve all real memories, details, and moments from the original. Those are the heart of the letter.
+
+Letter to rewrite:
 {source_content}
 """
             client = Anthropic(api_key=ANTHROPIC_API_KEY)
             response = client.messages.create(
                 model=ANTHROPIC_MODEL,
-                max_tokens=900,
-                temperature=0.25,
+                max_tokens=1200,
+                temperature=0.7,
                 messages=[{"role": "user", "content": prompt}],
             )
             polished = "\n".join(
